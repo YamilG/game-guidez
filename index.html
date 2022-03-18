@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+    <title>Game Guidez</title>
+  </head>
+  <body class="grey lighten-3">
+    <!-- NAVBAR -->
+    <nav class="z-depth-0 grey lighten-4">
+      <div class="nav-wrapper container">
+        <a href="#" class="brand-logo">
+          <img src="img/logo.svg" />
+        </a>
+        <ul id="nav-mobile" class="right hide-on-med-and-down">
+          <li class="logged-in">
+            <a
+              href="#"
+              class="grey-text modal-trigger"
+              data-target="modal-account"
+              >Account</a
+            >
+          </li>
+          <li class="logged-in">
+            <a href="#" class="grey-text" id="logout">Logout</a>
+          </li>
+          <li class="logged-in">
+            <a
+              href="#"
+              class="grey-text modal-trigger"
+              data-target="modal-create"
+              >Create Guide</a
+            >
+          </li>
+          <li class="logged-out">
+            <a
+              href="#"
+              class="grey-text modal-trigger"
+              data-target="modal-login"
+              >Login</a
+            >
+          </li>
+          <li class="logged-out">
+            <a
+              href="#"
+              class="grey-text modal-trigger"
+              data-target="modal-signup"
+              >Sign up</a
+            >
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- SIGN UP MODAL -->
+    <div id="modal-signup" class="modal">
+      <div class="modal-content">
+        <h4>Sign up</h4>
+        <br />
+        <form id="signup-form">
+          <div class="input-field">
+            <input type="email" id="signup-email" required />
+            <label for="signup-email">Email address</label>
+          </div>
+          <div class="input-field">
+            <input type="password" id="signup-password" required />
+            <label for="signup-password">Choose password</label>
+          </div>
+          <button class="btn yellow darken-2 z-depth-0">Sign up</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- LOGIN MODAL -->
+    <div id="modal-login" class="modal">
+      <div class="modal-content">
+        <h4>Login</h4>
+        <br />
+        <form id="login-form">
+          <div class="input-field">
+            <input type="email" id="login-email" required />
+            <label for="login-email">Email address</label>
+          </div>
+          <div class="input-field">
+            <input type="password" id="login-password" required />
+            <label for="login-password">Your password</label>
+          </div>
+          <button class="btn yellow darken-2 z-depth-0">Login</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ACCOUNT MODAL -->
+    <div id="modal-account" class="modal">
+      <div class="modal-content center-align">
+        <h4>Account details</h4>
+        <br />
+        <div class="account-details"></div>
+      </div>
+    </div>
+
+    <!-- CREATE GUIDE MODAL -->
+    <div id="modal-create" class="modal">
+      <div class="modal-content">
+        <h4>Create Guide</h4>
+        <br />
+        <form id="create-form">
+          <div class="input-field">
+            <input type="text" id="title" required />
+            <label for="title">Guide Title</label>
+          </div>
+          <div class="input-field">
+            <textarea
+              id="content"
+              class="materialize-textarea"
+              required
+            ></textarea>
+            <label for="content">Guide Content</label>
+          </div>
+          <button class="btn yellow darken-2 z-depth-0">Create</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- GUIDE LIST -->
+    <div class="container" id="guide-list">
+      <ul class="collapsible z-depth-0 guides"></ul>
+    </div>
+
+    <script type="module">
+      import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.8/firebase-app.js';
+      import { getAnalytics } from 'https://www.gstatic.com/firebasejs/9.6.8/firebase-analytics.js';
+      import {
+        getFirestore,
+        collection,
+        getDocs,
+        addDoc,
+        onSnapshot,
+        doc,
+        setDoc,
+        query
+      } from 'https://www.gstatic.com/firebasejs/9.6.8/firebase-firestore.js';
+      import {
+        getAuth,
+        createUserWithEmailAndPassword,
+        signInWithEmailAndPassword,
+        onAuthStateChanged
+      } from 'https://www.gstatic.com/firebasejs/9.6.8/firebase-auth.js';
+
+      const firebaseConfig = {
+        apiKey: 'AIzaSyBtQJ_5Yl-YsWdxPU61kGOTC2qv_mjb8GY',
+        authDomain: 'game-guidez-ec3ac.firebaseapp.com',
+        projectId: 'game-guidez-ec3ac',
+        storageBucket: 'game-guidez-ec3ac.appspot.com',
+        messagingSenderId: '498562587124',
+        appId: '1:498562587124:web:9af8e53bd5536f4df201a1',
+        measurementId: 'G-2GQ004CYJ3'
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore();
+      const auth = getAuth();
+
+      // get data
+      const q = query(collection(db, 'guides'));
+
+      // const snapshot = await getDocs(q);
+
+      // snapshot.forEach(doc => {
+      //   console.log(doc.id, ' => ', doc.data());
+      // });
+
+      // listen for auth status change
+      onAuthStateChanged(auth, user => {
+        if (user) {
+          console.log('user logged in: ', user.email);
+
+          onSnapshot(
+            q,
+            snapshot => {
+              setupGuides(snapshot);
+            },
+            error => {
+              console.error(error.message);
+            }
+          );
+
+          setupUI(user);
+        } else {
+          setupGuides([]);
+          setupUI();
+          console.log('user logged out');
+        }
+      });
+
+      // create new guide
+      const createForm = document.querySelector('#create-form');
+      createForm.addEventListener('submit', e => {
+        e.preventDefault();
+
+        const saveGuide = async () => {
+          await addDoc(collection(db, 'guides'), {
+            title: createForm['title'].value,
+            content: createForm['content'].value
+          })
+            .then(() => {
+              // close modal and clear form
+
+              const modal = document.querySelector('#modal-create');
+              M.Modal.getInstance(modal).close();
+              createForm.reset();
+            })
+            .catch(error => {
+              const errorCode = error.code;
+              const errorMessage = error.message;
+
+              console.error(errorCode, errorMessage);
+            });
+        };
+
+        saveGuide();
+      });
+
+      // signup
+      const signupForm = document.querySelector('#signup-form');
+
+      signupForm.addEventListener('submit', e => {
+        e.preventDefault();
+
+        // get user info
+        const email = signupForm['signup-email'].value;
+        const password = signupForm['signup-password'].value;
+
+        createUserWithEmailAndPassword(auth, email, password)
+          .then(cred => {
+            // console.log(cred.user);
+
+            const modal = document.querySelector('#modal-signup');
+            M.Modal.getInstance(modal).close();
+            signupForm.reset();
+          })
+          .catch(error => {
+            const errorCode = error.code;
+            const errorMessage = error.message;
+
+            console.error(errorCode, errorMessage);
+          });
+      });
+
+      // logout
+      const logout = document.querySelector('#logout');
+      logout.addEventListener('click', e => {
+        e.preventDefault();
+        auth.signOut();
+      });
+
+      // login
+      const loginForm = document.querySelector('#login-form');
+      loginForm.addEventListener('submit', e => {
+        e.preventDefault();
+
+        // get user info
+        const email = loginForm['login-email'].value;
+        const password = loginForm['login-password'].value;
+
+        signInWithEmailAndPassword(auth, email, password)
+          .then(cred => {
+            // console.log(cred.user);
+
+            // close the login modal and reset the form
+            const modal = document.querySelector('#modal-login');
+            M.Modal.getInstance(modal).close();
+            loginForm.reset();
+          })
+          .catch(error => {
+            const errorCode = error.code;
+            const errorMessage = error.message;
+
+            console.error(errorCode, errorMessage);
+          });
+      });
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <!-- <script src="js/auth.js"></script> -->
+    <script src="js/index.js"></script>
+  </body>
+</html>
