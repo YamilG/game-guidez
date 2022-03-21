@@ -79,6 +79,7 @@
           </div>
 
           <button class="btn yellow darken-2 z-depth-0">Sign up</button>
+          <p class="error pink-text center-align"></p>
         </form>
       </div>
     </div>
@@ -98,6 +99,7 @@
             <label for="login-password">Your password</label>
           </div>
           <button class="btn yellow darken-2 z-depth-0">Login</button>
+          <p class="error pink-text center-align"></p>
         </form>
       </div>
     </div>
@@ -262,12 +264,17 @@
             const modal = document.querySelector('#modal-signup');
             M.Modal.getInstance(modal).close();
             signupForm.reset();
+            signupForm.querySelector('.error').innerHTML = '';
           })
           .catch(error => {
-            const errorCode = error.code;
-            const errorMessage = error.message;
+            // const errorCode = error.code;
+            // const errorMessage = error.message;
 
-            console.error(errorCode, errorMessage);
+            // console.error(errorCode, errorMessage);
+            signupForm.querySelector('.error').innerHTML = error.message.slice(
+              9,
+              error.message.length
+            );
           });
       });
 
@@ -329,12 +336,17 @@
             const modal = document.querySelector('#modal-login');
             M.Modal.getInstance(modal).close();
             loginForm.reset();
+            loginForm.querySelector('.error').innerHTML = '';
           })
           .catch(error => {
-            const errorCode = error.code;
-            const errorMessage = error.message;
+            // const errorCode = error.code;
+            // const errorMessage = error.message;
 
-            console.error(errorCode, errorMessage);
+            // console.error(errorCode, errorMessage);
+            loginForm.querySelector('.error').innerHTML = error.message.slice(
+              9,
+              error.message.length
+            );
           });
       });
     </script>
