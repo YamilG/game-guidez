@@ -72,6 +72,12 @@
             <input type="password" id="signup-password" required />
             <label for="signup-password">Choose password</label>
           </div>
+
+          <div class="input-field">
+            <input type="text" id="signup-bio" required />
+            <label for="signup-bio">One line bio</label>
+          </div>
+
           <button class="btn yellow darken-2 z-depth-0">Sign up</button>
         </form>
       </div>
@@ -140,6 +146,7 @@
         getFirestore,
         collection,
         getDocs,
+        getDoc,
         addDoc,
         onSnapshot,
         doc,
@@ -237,11 +244,21 @@
         // get user info
         const email = signupForm['signup-email'].value;
         const password = signupForm['signup-password'].value;
+        const bio = signupForm['signup-bio'].value;
 
         createUserWithEmailAndPassword(auth, email, password)
           .then(cred => {
-            // console.log(cred.user);
+            const userId = cred.user.uid;
 
+            const setUserBio = async () => {
+              await setDoc(doc(db, 'users', userId), {
+                bio: bio
+              });
+            };
+
+            return setUserBio();
+          })
+          .then(() => {
             const modal = document.querySelector('#modal-signup');
             M.Modal.getInstance(modal).close();
             signupForm.reset();
@@ -260,6 +277,40 @@
         e.preventDefault();
         auth.signOut();
       });
+
+      const setupUI = user => {
+        if (user) {
+          // display account info
+
+          const getUserBio = async () => {
+            const userId = user.uid;
+            const docRef = doc(db, 'users', userId);
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+              const html = `<div>Logged in as ${user.email}</div>
+                            <div>${docSnap.data().bio}</div>`;
+              accountDetails.innerHTML = html;
+            } else {
+              // doc.data() will be undefined in this case
+              console.log('No such document!');
+            }
+          };
+          getUserBio();
+
+          // display links
+          loggedInLinks.forEach(link => (link.style.display = 'block'));
+          loggedOutLinks.forEach(link => (link.style.display = 'none'));
+        } else {
+          //remove account info
+          const html = '';
+          accountDetails.innerHTML = html;
+
+          //remove links
+          loggedInLinks.forEach(link => (link.style.display = 'none'));
+          loggedOutLinks.forEach(link => (link.style.display = 'block'));
+        }
+      };
 
       // login
       const loginForm = document.querySelector('#login-form');
